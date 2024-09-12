@@ -4,13 +4,19 @@ import java.util.List;
 
 public class Device
 {
-  private String name, architecture,ip;
-  List<Cpu> cores;
-  Long processCount;
-  double systemCpuPercentAvg,systemCpuInterruptAvg;
-  double systemCpuUserPercentAvg;
 
-  public Device(String name, String architecture, String ip, List<Cpu> cores, Long processCount, double systemCpuInterruptAvg, double systemCpuUserPercentAvg, double systemCpuPercentAvg) {
+  private String name; //mpstat | head -n 1 | awk '{print $3}'
+  private String architecture; //mpstat | head -n 1 | awk '{print $5}'
+  private String ip; //ip -4 addr show wlp0s20f3 | awk 'NR==2 {print $2}' // -4 means inet family
+  List<Cpu> cores; //for this load the dummy data as of now for each cpu //mpstat -P coreNumber
+  Long processCount; // ps -e | wc -l
+  float systemCpuPercentAvg;//mpstat | awk 'NR==4 {print $7}'
+  float systemCpuInterruptAvg;//mpstat | awk 'NR==7 {print $9}'
+  float systemCpuUserPercentAvg;//mpstat | awk 'NR==4 {print $5}'
+
+  public Device(String name, String architecture, String ip, List<Cpu> cores, Long processCount, float systemCpuInterruptAvg, float systemCpuUserPercentAvg, float systemCpuPercentAvg)
+  {
+
     this.name = name;
     this.architecture = architecture;
     this.ip = ip;
@@ -19,6 +25,7 @@ public class Device
     this.systemCpuInterruptAvg = systemCpuInterruptAvg;
     this.systemCpuUserPercentAvg = systemCpuUserPercentAvg;
     this.systemCpuPercentAvg = systemCpuPercentAvg;
+
   }
 
   public String getName() {
@@ -61,11 +68,11 @@ public class Device
     this.cores = cores;
   }
 
-  public double getSystemCpuPercentAvg() {
+  public float getSystemCpuPercentAvg() {
     return systemCpuPercentAvg;
   }
 
-  public void setSystemCpuPercentAvg(double systemCpuPercentAvg) {
+  public void setSystemCpuPercentAvg(float systemCpuPercentAvg) {
     this.systemCpuPercentAvg = systemCpuPercentAvg;
   }
 
@@ -73,7 +80,7 @@ public class Device
     return systemCpuUserPercentAvg;
   }
 
-  public void setSystemCpuUserPercentAvg(double systemCpuUserPercentAvg) {
+  public void setSystemCpuUserPercentAvg(float systemCpuUserPercentAvg) {
     this.systemCpuUserPercentAvg = systemCpuUserPercentAvg;
   }
 
@@ -81,7 +88,7 @@ public class Device
     return systemCpuInterruptAvg;
   }
 
-  public void setSystemCpuInterruptAvg(double systemCpuInterruptAvg) {
+  public void setSystemCpuInterruptAvg(float systemCpuInterruptAvg) {
     this.systemCpuInterruptAvg = systemCpuInterruptAvg;
   }
 }

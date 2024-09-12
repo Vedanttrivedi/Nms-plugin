@@ -1,6 +1,6 @@
 package com.example.plugin.models;
 
-public record Cpu(double usr,double sys,double iowait,double idle,int processes)
+public record Cpu(float usr,float sys,float iowait,float idle,int processes)
 {
 
 }
