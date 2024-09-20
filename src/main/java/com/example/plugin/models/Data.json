@@ -28,10 +28,10 @@
   "architecture": "_x86_64_",
   "cores": 8,
   "process_count": 330,
-  "system.cpu.percent.avg": 0.19,
-  "system.cpu.interrupt.avg": 0.20,
-  "system.cpu.user.percent.avg": 0.30,
-  "system.cpu.inteterrupt.avg": 0.40,
+  "system.cpu.percent": 0.19,
+  "system.mem.interrupt": 0.20,
+  "system.cpu.user.percent": 0.30,
+  "system.cpu.inteterrupt": 0.40,
   "threads": 1400
 }
 
