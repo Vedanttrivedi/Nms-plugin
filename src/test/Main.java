@@ -45,100 +45,60 @@ public class ProcessingRunnable implements Runnable {
 
       ExecutorService threadPool = Executors.newFixedThreadPool(16);
 
-      while (true)
-      {
+      while (true) {
         var data = socket.recvStr();
-
         var stringJsonFormationData = new String(Base64.getDecoder().decode(data), ZMQ.CHARSET);
-
         var jsonArray = new JsonArray(stringJsonFormationData);
-
         log.log(Level.FINE, "Received " + jsonArray);
 
         var lenOfData = jsonArray.size();
 
-        if (lenOfData == 1)
-        {
+        if (lenOfData == 1) {
           log.log(Level.FINE, "Periodical");
 
           var dataToSend = new JsonArray();
-
           List<CompletableFuture<Void>> futures = new ArrayList<>();
 
           provisionedDevice.forEach((ip, device) -> {
             CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-              try
-              {
+              try {
                 return new FetchDetails(device.username(), device.password(), device.ip(),
                   jsonArray.getJsonObject(0).getString("metric")).call();
-              }
-              catch (Exception e)
-              {
+              } catch (Exception e) {
                 log.log(Level.SEVERE, "Error collecting data: " + e.getMessage());
                 return null;
               }
-            }, threadPool)
-              .thenAccept(metric -> {
-
+            }, threadPool).thenAccept(metric -> {
               log.log(Level.CONFIG, "Object" + metric);
-
               var object = new JsonObject();
 
-              if (jsonArray.getJsonObject(0).getString("metric").equals("memory"))
-              {
-
+              if (jsonArray.getJsonObject(0).getString("metric").equals("memory")) {
                 log.log(Level.INFO, "Memory data " + metric);
-
                 var memData = (Memory_Metrics) (metric);
-
-                if (memData != null && memData.isStatus())
-                {
+                if (memData != null && memData.isStatus()) {
                   object.put("free", memData.getFree());
-
                   object.put("used", memData.getUsed());
-
                   object.put("swap", memData.getSwap());
-
                   object.put("cached", memData.getCached());
-
                   object.put("disk_space", memData.getDisk_space());
-
                   object.put("ip", ip);
-
                   object.put("status", true);
-                }
-                else
-                {
+                } else {
                   object.put("ip", ip);
-
                   object.put("status", false);
                 }
-              }
-              else if (jsonArray.getJsonObject(0).getString("metric").equals("cpu"))
-              {
-
+              } else if (jsonArray.getJsonObject(0).getString("metric").equals("cpu")) {
                 log.log(Level.INFO, "Cpu data " + metric);
-
                 var cpuData = (Cpu_Metrics) (metric);
-
-                if (cpuData != null && cpuData.isStatus())
-                {
+                if (cpuData != null && cpuData.isStatus()) {
                   object.put("ip", ip);
-
                   object.put("percentage", cpuData.getPercentage());
-
                   object.put("io_percent", cpuData.getIo_percent());
-
                   object.put("load_average", cpuData.getLoad_average());
-
                   object.put("status", true);
-
                   object.put("threads", cpuData.getThreads());
-
                   object.put("process_counts", cpuData.getProcess_counts());
-                }
-                else
-                {
+                } else {
                   object.put("ip", ip);
                   object.put("status", false);
                 }
@@ -155,10 +115,11 @@ public class ProcessingRunnable implements Runnable {
             futures.add(future);
           });
 
+          // Wait for all futures to complete
           CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
+          // Code below should be only executed after getting all data
           dataToSend.add(jsonArray.getJsonObject(0).getString("metric"));
-
           dataToSend.add(LocalDateTime.now().toString()); // Timestamp
 
           log.log(Level.INFO, "Sending TO App");
@@ -179,14 +140,15 @@ public class ProcessingRunnable implements Runnable {
 
           System.out.println("Device Discovery: " + cpu_metrics + "\t" + memory_metrics + "\t" + device_metrics);
 
+          // Remove the last object; data is only about devices
           jsonArray.remove(lenOfData - 1);
 
+          // Add or remove devices to the provisioned devices map
           jsonArray.forEach(device -> {
             var jsonDevice = (JsonObject) device;
             System.out.println("New Device information " + jsonDevice);
 
-            if (jsonDevice.getBoolean("doPolling"))
-            {
+            if (jsonDevice.getBoolean("doPolling")) {
               provisionedDevice.put(
                 jsonDevice.getString("ip"),
                 new Device(
@@ -195,9 +157,7 @@ public class ProcessingRunnable implements Runnable {
                   jsonDevice.getString("password")
                 )
               );
-            }
-            else
-            {
+            } else {
               provisionedDevice.remove(jsonDevice.getString("ip"));
             }
           });

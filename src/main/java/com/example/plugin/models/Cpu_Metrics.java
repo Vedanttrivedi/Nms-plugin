@@ -59,22 +59,17 @@ public class Cpu_Metrics extends Metric
     return status;
   }
 
-  public JsonObject toJson(Cpu_Metrics cpu_metrics)
-  {
-    var cpuObjectInJson = new JsonObject();
 
-    cpuObjectInJson.put("percentage",percentage);
-
-    cpuObjectInJson.put("threads",threads);
-
-    cpuObjectInJson.put("io_percent",io_percent);
-
-    cpuObjectInJson.put("process_counts",process_counts);
-
-    cpuObjectInJson.put("load_average",load_average);
-
-    return cpuObjectInJson;
-
+  @Override
+  public String toString() {
+    return "Cpu_Metrics{" +
+      "percentage=" + percentage +
+      ", load_average=" + load_average +
+      ", process_counts=" + process_counts +
+      ", threads=" + threads +
+      ", io_percent=" + io_percent +
+      ", status=" + status +
+      '}';
   }
 }
 

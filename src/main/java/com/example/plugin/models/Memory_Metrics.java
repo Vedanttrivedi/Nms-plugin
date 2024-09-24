@@ -52,22 +52,17 @@ public class Memory_Metrics extends Metric
     return disk_space;
   }
 
-  public JsonObject toJson(Memory_Metrics memoryMetrics)
+
+  @Override
+  public String toString()
   {
-    var memoryObjectInJson = new JsonObject();
-
-    memoryObjectInJson.put("free",free);
-
-    memoryObjectInJson.put("used",used);
-
-    memoryObjectInJson.put("swap",swap);
-
-    memoryObjectInJson.put("cache",cached);
-
-    memoryObjectInJson.put("disk_space",disk_space);
-
-
-    return memoryObjectInJson;
-
+    return "Memory_Metrics{" +
+      "free='" + free + '\'' +
+      ", used='" + used + '\'' +
+      ", swap='" + swap + '\'' +
+      ", cached='" + cached + '\'' +
+      ", disk_space='" + disk_space + '\'' +
+      ", status=" + status +
+      '}';
   }
 }
