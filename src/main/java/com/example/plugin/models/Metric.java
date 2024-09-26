@@ -6,7 +6,6 @@ public abstract class Metric
 {
   private String ip;
 
-  private Timestamp created_at;
 
 
   public Metric(String ip)

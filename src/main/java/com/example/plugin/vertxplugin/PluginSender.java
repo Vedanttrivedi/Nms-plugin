@@ -68,9 +68,6 @@ public class PluginSender extends AbstractVerticle
 
         System.out.println("Received Device");
 
-        synchronized (dataToSend){
-          dataToSend.add(device.body());
-        }
 
         //if the datatosend reaches full potential we can send this
 
@@ -81,20 +78,13 @@ public class PluginSender extends AbstractVerticle
 
           dataToSend.add(LocalDateTime.now().toString());
 
-          System.out.println("Data to send JsonObject"+Thread.currentThread().getName()+"\t"+dataToSend);
-
-          System.out.println("Data to send CRL"+Thread.currentThread().getName()+"\t"+dataToSend);
-
           vertx.eventBus().send("inner-eventbus",true);
 
           //execute sendFinal(),but from the threda on which worker thred is deployed
-          vertx.runOnContext(context->
-          {
             System.out.println("Context "+context+"\t Thread "+Thread.currentThread().getName());
 
             sendFinal();
 
-          });
         }
 
     });

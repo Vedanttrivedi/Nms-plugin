@@ -20,7 +20,7 @@ public class Main
 
     var context = new ZContext();
 
-    CompositeFuture.join
+    CompositeFuture.all
       (
         vertx.deployVerticle(new PluginReceiver(context),
           new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
@@ -39,8 +39,7 @@ public class Main
           System.out.println("All the vreticals are deployed");
         }
         else
-          System.out.println("Something went wrong "+deploymentResult.cause());
-
+          System.exit(1);
       });
   }
 }
