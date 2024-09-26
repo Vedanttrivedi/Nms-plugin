@@ -1,34 +1,46 @@
 package com.example.plugin;
 
-import com.example.plugin.service.DataReceiverVerticle;
-import com.example.plugin.service.ProcessingRunnable;
+import com.example.plugin.vertxplugin.DataCollector;
+import com.example.plugin.vertxplugin.PluginReceiver;
+import com.example.plugin.vertxplugin.PluginSender;
 import io.vertx.core.*;
 import org.zeromq.ZContext;
 
 import java.util.concurrent.TimeUnit;
 
-public class Main extends AbstractVerticle
+public class Main
 {
-
   public static void main(String[] args)
   {
     var vertx = Vertx.vertx(
       new VertxOptions().setMaxWorkerExecuteTime(600).
-      setMaxWorkerExecuteTimeUnit(TimeUnit.SECONDS)
-
-    );
-    ZContext context = new ZContext();
-
-    vertx.deployVerticle(new DataReceiverVerticle(context),
-      new DeploymentOptions().
-        setThreadingModel(ThreadingModel.WORKER)
+        setMaxWorkerExecuteTimeUnit(TimeUnit.SECONDS)
 
     );
 
+    var context = new ZContext();
 
-      Thread processingThread = new Thread(new ProcessingRunnable());
+    CompositeFuture.join
+      (
+        vertx.deployVerticle(new PluginReceiver(context),
+          new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
+        ),
 
-      processingThread.start();
+        vertx.deployVerticle(new DataCollector()),
 
+        vertx.deployVerticle(
+
+          new PluginSender(context))
+      ).
+      onComplete(deploymentResult->{
+
+        if(deploymentResult.succeeded())
+        {
+          System.out.println("All the vreticals are deployed");
+        }
+        else
+          System.out.println("Something went wrong "+deploymentResult.cause());
+
+      });
   }
 }

@@ -219,7 +219,6 @@ public class ProcessingRunnable implements Runnable
 
     var encryptionAlgorithm =metrics.getString("encryptionAlgorithm");
 
-    System.out.println("Secret Key: "+secretKey+"\t Encryption : "+encryptionAlgorithm+"\t");
 
     jsonArray.forEach(device ->
     {
