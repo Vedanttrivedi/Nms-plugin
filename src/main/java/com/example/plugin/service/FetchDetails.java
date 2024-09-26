@@ -29,7 +29,7 @@ public class FetchDetails implements Callable<Metric>
   String metric;
 
   String[] cpuMetricsCommand = {
-    "top -bn1 | grep '%Cpu' | awk '{print $2}'" ,//CPU spent in user processes
+    "top -bn1 | grep '%Cpu' | awk '{print $2}'" ,//CPU spent in system processes
       "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'" ,//1-minute load average, no of processes waiting to execute on cpu
       "ps aux | wc -l", //count total no of running processes
       "ps -eLF | wc -l",//count total threads //-L total no of threads
