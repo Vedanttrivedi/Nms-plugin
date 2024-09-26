@@ -1,6 +1,7 @@
 package com.example.plugin.models;
 
 import io.vertx.core.json.JsonObject;
+import jdk.jshell.spi.SPIResolutionException;
 
 public class Cpu_Metrics extends Metric
 {
@@ -70,6 +71,18 @@ public class Cpu_Metrics extends Metric
       ", io_percent=" + io_percent +
       ", status=" + status +
       '}';
+  }
+
+  public JsonObject toJson()
+  {
+    return new JsonObject()
+      .put("ip",getIp())
+      .put("percentage", percentage)
+      .put("io_percent", io_percent)
+      .put("threads", threads)
+      .put("process_counts", process_counts)
+      .put("load_average", load_average)
+      .put("status", status);
   }
 }
 

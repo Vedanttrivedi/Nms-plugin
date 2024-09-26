@@ -1,41 +1,36 @@
-package com.example.plugin.service;
+package com.example.plugin.vertxplugin;
 
 import com.example.plugin.models.Cpu_Metrics;
 import com.example.plugin.models.Memory_Metrics;
-import com.example.plugin.models.Metric;
-import com.jcraft.jsch.*;
-
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 
-//This class should be responsible for getting all the information based on the commands list it received
-
-public class FetchDetails implements Callable<Metric>
+//this class acts as load balancer class it recieves device information and calculates the information
+public class FetchDetails extends AbstractVerticle
 {
 
-  String username;
-
-  String password;
-
-  String host;
-
-  String[] commands;
-
-  String metric;
-
-  String[] cpuMetricsCommand = {
+  String[] cpuMetricsCommand =
+    {
     "top -bn1 | grep '%Cpu' | awk '{print $2}'" ,//CPU spent in system processes
-      "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'" ,//1-minute load average, no of processes waiting to execute on cpu
-      "ps aux | wc -l", //count total no of running processes
-      "ps -eLF | wc -l",//count total threads //-L total no of threads
-      "iostat | awk 'NR==4 {print $4}'" //iowait
+    "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'" ,//1-minute load average, no of processes waiting to execute on cpu
+    "ps aux | wc -l", //count total no of running processes
+    "ps -eLF | wc -l",//count total threads //-L total no of threads
+    "iostat | awk 'NR==4 {print $4}'" //iowait
   };
-  String[] mem_commnds = {
+
+  String[] mem_commnds =
+    {
     "free | awk 'NR==2{print $4}'",//Free memory
     "free | awk 'NR==2{print $3}'",//Used memory
     "free | awk 'NR==3{print $2}'",//Swap memory
@@ -43,25 +38,42 @@ public class FetchDetails implements Callable<Metric>
     "df | awk 'NR==4 {print $2}'"//disk space
   };
 
-  public FetchDetails(String username,String password,String host,String metric)
-  {
-
-    this.username = username;
-    this.password = password;
-    this.host = host;
-    this.metric = metric;
-
-  }
 
   @Override
-  public Metric call()
+  public void start(Promise<Void> startPromise) throws Exception
+  {
+    //Now Collect information Based on ip,username,host,metric
+    //First Get The Size Of Total Discoveries
+    //Now This class Should Do Calculation
+    //and then send the JsonObject to sender
+    vertx.eventBus().<JsonObject>localConsumer("fetch-send",
+
+      device->{
+      //now collect the information based
+
+        var jsonDevice = device.body();
+        System.out.println("Received info to collect device informaiton "+jsonDevice);
+
+        //collect the metric , convert it json and send
+      var metric = call(jsonDevice.getString("username"),jsonDevice.getString("password"),jsonDevice.getString("ip"),jsonDevice.getString("metric"));
+
+      metric.put("metric",jsonDevice.getString("metric"));
+
+      vertx.eventBus().send("send",metric);
+
+    });
+
+    startPromise.complete();
+
+  }
+  public JsonObject call(String username,String password,String ip,String metric)
   {
 
     try
     {
       JSch jsch = new JSch();
 
-      Session session = jsch.getSession(username, host, 22);
+      Session session = jsch.getSession(username, ip, 22);
 
       session.setTimeout(2000);
 
@@ -100,28 +112,27 @@ public class FetchDetails implements Callable<Metric>
       session.disconnect();
 
       if(metric.equals("memory"))
-        return  new Memory_Metrics(host,data.get(0),data.get(1),data.get(2),data.get(3),data.get(4),true);
+        return  new Memory_Metrics(ip,data.get(0),data.get(1),data.get(2),data.get(3),data.get(4),true).toJson();
 
       System.out.println("CPU data length "+data);
 
       return  new Cpu_Metrics(
-        host,
+        ip,
         Float.parseFloat(data.get(0)),
         Float.parseFloat(data.get(1)),
         Integer.parseInt(data.get(2)),
         Integer.parseInt(data.get(3)),
         Float.parseFloat(data.get(4)),true
-      );
+      ).toJson();
 
     }
 
     catch (Exception exception)
     {
-      // Handle any other errors
       System.out.println("Exception :"+exception.getMessage());
 
-      return metric.equals("memory")?new Memory_Metrics(host,"0","0","0","0","0",false)
-        :new Cpu_Metrics(host,0,0,0,0,0,false);
+      return metric.equals("memory")?new Memory_Metrics(ip,"0","0","0","0","0",false).toJson()
+        :new Cpu_Metrics(ip,0,0,0,0,0,false).toJson();
     }
 
   }
@@ -176,4 +187,3 @@ public class FetchDetails implements Callable<Metric>
     return output.toString().trim();  // Return the result
   }
 }
-

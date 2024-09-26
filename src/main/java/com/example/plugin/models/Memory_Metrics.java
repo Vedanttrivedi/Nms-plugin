@@ -65,4 +65,17 @@ public class Memory_Metrics extends Metric
       ", status=" + status +
       '}';
   }
+
+  public JsonObject toJson()
+  {
+    return new JsonObject()
+      .put("ip",getIp())
+      .put("free", free)
+      .put("used", used)
+      .put("swap", swap)
+      .put("cached", cached)
+      .put("disk_space", disk_space)
+      .put("status", status);
+  }
+
 }

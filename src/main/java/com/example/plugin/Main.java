@@ -1,25 +1,46 @@
 package com.example.plugin;
 
-import com.example.plugin.service.ProcessingRunnable;
+import com.example.plugin.vertxplugin.DataCollector;
+import com.example.plugin.vertxplugin.PluginReceiver;
+import com.example.plugin.vertxplugin.PluginSender;
+import io.vertx.core.*;
+import org.zeromq.ZContext;
+
+import java.util.concurrent.TimeUnit;
 
 public class Main
 {
-
   public static void main(String[] args)
   {
+    var vertx = Vertx.vertx(
+      new VertxOptions().setMaxWorkerExecuteTime(600).
+        setMaxWorkerExecuteTimeUnit(TimeUnit.SECONDS)
 
-    try
-    {
-      Thread processingThread = new Thread(new ProcessingRunnable());
+    );
 
-      processingThread.start();
+    var context = new ZContext();
 
-    }
-    catch (Exception exception)
-    {
+    CompositeFuture.join
+      (
+        vertx.deployVerticle(new PluginReceiver(context),
+          new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
+        ),
 
-      System.out.println("Exception in shadow main "+exception.getMessage());
+        vertx.deployVerticle(new DataCollector()),
 
-    }
+        vertx.deployVerticle(
+
+          new PluginSender(context))
+      ).
+      onComplete(deploymentResult->{
+
+        if(deploymentResult.succeeded())
+        {
+          System.out.println("All the vreticals are deployed");
+        }
+        else
+          System.out.println("Something went wrong "+deploymentResult.cause());
+
+      });
   }
 }

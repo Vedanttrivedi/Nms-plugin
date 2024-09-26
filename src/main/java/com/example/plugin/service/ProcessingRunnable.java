@@ -4,12 +4,15 @@ import com.example.plugin.models.Cpu_Metrics;
 import com.example.plugin.models.Device;
 import com.example.plugin.models.Memory_Metrics;
 import com.example.plugin.models.Metric;
+import com.example.plugin.utils.Utils;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import jdk.jshell.execution.Util;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.concurrent.*;
@@ -19,192 +22,264 @@ import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProcessingRunnable implements Runnable {
-  ConcurrentHashMap<String, Device> provisionedDevice;
+public class ProcessingRunnable implements Runnable
+{
 
-  public ProcessingRunnable() {
+  private final ConcurrentHashMap<String, Device> provisionedDevice;
+
+  private final BlockingQueue<JsonArray> dataQueue;
+
+  private final Logger log;
+
+  public ProcessingRunnable()
+  {
+
     this.provisionedDevice = new ConcurrentHashMap<>();
+
+    this.dataQueue = new LinkedBlockingQueue<>();
+
+    LogManager lgmngr = LogManager.getLogManager();
+
+    this.log = lgmngr.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
   }
 
   @Override
-  public void run() {
-    var cpu_metrics = "";
-    var memory_metrics = "";
-    var device_metrics = "";
-
+  public void run()
+  {
     try (ZContext context = new ZContext()) {
-      LogManager lgmngr = LogManager.getLogManager();
-      Logger log = lgmngr.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
       log.log(Level.INFO, "Plugin Started");
 
-      var socket = context.createSocket(SocketType.PULL);
+      ZMQ.Socket socket = context.createSocket(SocketType.PULL);
+
       socket.connect("tcp://localhost:4555");
 
-      var dataSenderSocket = context.createSocket(SocketType.PUSH);
-      dataSenderSocket.bind("tcp://localhost:4556");
+      Thread senderThread = new Thread(() -> runSender(context));
+
+      senderThread.start();
 
       ExecutorService threadPool = Executors.newFixedThreadPool(16);
 
-      while (true)
+      while (!Thread.currentThread().isInterrupted())
       {
         var data = socket.recvStr();
+        if (data == null) continue;
 
-        var stringJsonFormationData = new String(Base64.getDecoder().decode(data), ZMQ.CHARSET);
+        processReceivedData(data, threadPool);
 
-        var jsonArray = new JsonArray(stringJsonFormationData);
+      }
+    }
+    catch (Exception e)
+    {
+      log.log(Level.SEVERE, "Error in main processing loop", e);
+    }
+    finally
+    {
+      log.log(Level.INFO, "ProcessingRunnable shutting down");
+    }
+  }
 
-        log.log(Level.FINE, "Received " + jsonArray);
+  private void processReceivedData(String data, ExecutorService threadPool)
+  {
+    try
+    {
+      var decodedData = new String(Base64.getDecoder().decode(data), ZMQ.CHARSET);
 
-        var lenOfData = jsonArray.size();
+      JsonArray jsonArray = new JsonArray(decodedData);
 
-        if (lenOfData == 1)
+      log.log(Level.FINE, "Received " + jsonArray);
+
+      if (jsonArray.size() == 1)
+      {
+        processPeriodicalData(jsonArray, threadPool);
+      }
+      else
+      {
+        processDeviceProvisioningData(jsonArray);
+      }
+    }
+    catch (Exception e)
+    {
+      log.log(Level.SEVERE, "Error processing received data", e);
+    }
+  }
+
+  private void processPeriodicalData(JsonArray jsonArray, ExecutorService threadPool)
+  {
+    JsonArray dataToSend = new JsonArray();
+
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+    provisionedDevice.forEach((ip, device) ->
+    {
+      CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+
+        try
         {
-          log.log(Level.FINE, "Periodical");
+          return new FetchDetails(device.username(), device.password(), device.ip(),
+            jsonArray.getJsonObject(0).getString("metric")).call();
+        }
+        catch (Exception e)
+        {
+          log.log(Level.SEVERE, "Error collecting data for IP " + ip, e);
+          return null;
+        }
+      }, threadPool)
 
-          var dataToSend = new JsonArray();
+        .thenAccept(metric ->
+        {
 
-          List<CompletableFuture<Void>> futures = new ArrayList<>();
+          System.out.println("Metric Returned "+metric);
 
-          provisionedDevice.forEach((ip, device) -> {
-            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-              try
-              {
-                return new FetchDetails(device.username(), device.password(), device.ip(),
-                  jsonArray.getJsonObject(0).getString("metric")).call();
-              }
-              catch (Exception e)
-              {
-                log.log(Level.SEVERE, "Error collecting data: " + e.getMessage());
-                return null;
-              }
-            }, threadPool)
-              .thenAccept(metric -> {
+        JsonObject object = processMetric(metric, ip, jsonArray.getJsonObject(0).getString("metric"));
 
-              log.log(Level.CONFIG, "Object" + metric);
+        synchronized (dataToSend) {
+          System.out.println("Adding object "+object);
+          dataToSend.add(object);
+        }
 
-              var object = new JsonObject();
+      })
+        .exceptionally(ex -> {
 
-              if (jsonArray.getJsonObject(0).getString("metric").equals("memory"))
-              {
+          log.log(Level.SEVERE, "Exception in processing for IP " + ip, ex);
 
-                log.log(Level.INFO, "Memory data " + metric);
+        return null;
+      });
 
-                var memData = (Memory_Metrics) (metric);
+      futures.add(future);
+    });
 
-                if (memData != null && memData.isStatus())
-                {
-                  object.put("free", memData.getFree());
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-                  object.put("used", memData.getUsed());
+    dataToSend.add(jsonArray.getJsonObject(0).getString("metric"));
 
-                  object.put("swap", memData.getSwap());
+    dataToSend.add(LocalDateTime.now().toString());
 
-                  object.put("cached", memData.getCached());
+    log.log(Level.INFO, "Queueing data to send: " + dataToSend);
 
-                  object.put("disk_space", memData.getDisk_space());
+    dataQueue.offer(dataToSend);
 
-                  object.put("ip", ip);
+  }
 
-                  object.put("status", true);
-                }
-                else
-                {
-                  object.put("ip", ip);
+  private JsonObject processMetric(Metric metric, String ip, String metricType)
+  {
 
-                  object.put("status", false);
-                }
-              }
-              else if (jsonArray.getJsonObject(0).getString("metric").equals("cpu"))
-              {
+    JsonObject object = new JsonObject();
 
-                log.log(Level.INFO, "Cpu data " + metric);
+    object.put("ip", ip);
 
-                var cpuData = (Cpu_Metrics) (metric);
+    if ("memory".equals(metricType) && metric instanceof Memory_Metrics)
+    {
+      Memory_Metrics memData = (Memory_Metrics) metric;
+      if (memData.isStatus()) {
+        object.put("free", memData.getFree())
+          .put("used", memData.getUsed())
+          .put("swap", memData.getSwap())
+          .put("cached", memData.getCached())
+          .put("disk_space", memData.getDisk_space())
+          .put("status", true);
+      }
+      else
+      {
+        object.put("status", false);
+      }
+    }
+    else if ("cpu".equals(metricType) && metric instanceof Cpu_Metrics)
+    {
+      Cpu_Metrics cpuData = (Cpu_Metrics) metric;
 
-                if (cpuData != null && cpuData.isStatus())
-                {
-                  object.put("ip", ip);
+      if (cpuData.isStatus())
+      {
+        object.put("percentage", cpuData.getPercentage())
+          .put("io_percent", cpuData.getIo_percent())
+          .put("load_average", cpuData.getLoad_average())
+          .put("threads", cpuData.getThreads())
+          .put("process_counts", cpuData.getProcess_counts())
+          .put("status", true);
+      }
+      else
+      {
+        object.put("status", false);
+      }
+    }
 
-                  object.put("percentage", cpuData.getPercentage());
+    return object;
+  }
 
-                  object.put("io_percent", cpuData.getIo_percent());
+  private void processDeviceProvisioningData(JsonArray jsonArray)
+  {
+    log.log(Level.INFO, "Processing device provisioning data");
 
-                  object.put("load_average", cpuData.getLoad_average());
+    JsonObject metrics = jsonArray.getJsonObject(jsonArray.size() - 1);
 
-                  object.put("status", true);
+    jsonArray.remove(jsonArray.size() - 1);
 
-                  object.put("threads", cpuData.getThreads());
+    var secretKey = metrics.getString("secretKey");
 
-                  object.put("process_counts", cpuData.getProcess_counts());
-                }
-                else
-                {
-                  object.put("ip", ip);
-                  object.put("status", false);
-                }
-              }
+    var encryptionAlgorithm =metrics.getString("encryptionAlgorithm");
 
-              synchronized (dataToSend) {
-                dataToSend.add(object);
-              }
-            }).exceptionally(ex -> {
-              log.log(Level.SEVERE, "Exception in processing for IP " + ip, ex);
-              return null;
-            });
 
-            futures.add(future);
-          });
+    jsonArray.forEach(device ->
+    {
+      JsonObject jsonDevice = (JsonObject) device;
 
-          CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      if (jsonDevice.getBoolean("doPolling"))
+      {
+        provisionedDevice.put(
+          jsonDevice.getString("ip"),
+          new Device(
+            jsonDevice.getString("ip"),
+            jsonDevice.getString("username"),
+            //Utils.decryptPassword(jsonDevice.getString("password"),secretKey,encryptionAlgorithm)//
+            jsonDevice.getString("password")
+          )
+        );
+      }
+      else
+      {
+        provisionedDevice.remove(jsonDevice.getString("ip"));
+      }
+    });
+  }
 
-          dataToSend.add(jsonArray.getJsonObject(0).getString("metric"));
+  private void runSender(ZContext context)
+  {
+    try (ZMQ.Socket dataSenderSocket = context.createSocket(SocketType.PUSH))
+    {
 
-          dataToSend.add(LocalDateTime.now().toString()); // Timestamp
+      dataSenderSocket.bind("tcp://localhost:4556");
 
-          log.log(Level.INFO, "Sending TO App");
-          log.log(Level.INFO, dataToSend.toString());
+      System.out.println("Sender socket loaded");
+
+      while (!Thread.currentThread().isInterrupted())
+      {
+        try
+        {
+          var dataToSend = dataQueue.take();
+
+          System.out.println("Sending data from plugin "+dataToSend);
+
+          log.log(Level.INFO, "Sending data: " + dataToSend);
 
           var base64Data = Base64.getEncoder().encode(dataToSend.toString().getBytes());
+
           dataSenderSocket.send(base64Data);
 
-        } else {
-          System.out.println("Need to add new Devices/remove device or the first time boot up " + LocalDateTime.now());
+          System.out.println("Sent!!!!!!!");
+        }
+        catch (InterruptedException e)
+        {
+          Thread.currentThread().interrupt();
 
-          var metrics = jsonArray.getJsonObject(lenOfData - 1);
-          System.out.println("Metrics are " + metrics);
-
-          cpu_metrics = metrics.getString("cpu");
-          memory_metrics = metrics.getString("memory");
-          device_metrics = metrics.getString("device");
-
-          System.out.println("Device Discovery: " + cpu_metrics + "\t" + memory_metrics + "\t" + device_metrics);
-
-          jsonArray.remove(lenOfData - 1);
-
-          jsonArray.forEach(device -> {
-            var jsonDevice = (JsonObject) device;
-            System.out.println("New Device information " + jsonDevice);
-
-            if (jsonDevice.getBoolean("doPolling"))
-            {
-              provisionedDevice.put(
-                jsonDevice.getString("ip"),
-                new Device(
-                  jsonDevice.getString("ip"),
-                  jsonDevice.getString("username"),
-                  jsonDevice.getString("password")
-                )
-              );
-            }
-            else
-            {
-              provisionedDevice.remove(jsonDevice.getString("ip"));
-            }
-          });
+          break;
+        }
+        catch (Exception e)
+        {
+          log.log(Level.SEVERE, "Error sending data", e);
         }
       }
-    } catch (Exception e) {
-      System.out.println("Error while listening to data " + e.getLocalizedMessage());
     }
+    log.log(Level.INFO, "Sender thread shutting down");
   }
 }
