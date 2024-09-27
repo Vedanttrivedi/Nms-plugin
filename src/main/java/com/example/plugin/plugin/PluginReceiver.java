@@ -1,4 +1,4 @@
-package com.example.plugin.vertxplugin;
+package com.example.plugin.plugin;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;

@@ -5,67 +5,49 @@ import io.vertx.core.json.JsonObject;
 
 public class Memory_Metrics extends Metric
 {
-  private String free;
-  private String used;
-  private String swap;
-  private String cached;
-  private String disk_space;
+  private int free;
+  private int used;
+  private int swap;
+  private int cached;
+  private int disk_space;
   private boolean status;
 
-  public Memory_Metrics(String ip,String free, String used, String swap, String cached, String disk_space,boolean status)
-  {
 
+  public Memory_Metrics(String ip, int free, int used, int swap, int cached, int disk_space, boolean status) {
     super(ip);
-    this.free=free;
-    this.cached=cached;
-    this.disk_space=disk_space;
-    this.swap =swap;
-    this.status = status;
+    this.free = free;
     this.used = used;
-
+    this.swap = swap;
+    this.cached = cached;
+    this.disk_space = disk_space;
+    this.status = status;
   }
 
-  public String getFree() {
+
+  public int getFree()
+  {
     return free;
   }
 
-  public String getUsed()
-  {
+  public int getUsed() {
     return used;
   }
 
-  public String getSwap()
-  {
+  public int getSwap() {
     return swap;
   }
 
-  public String getCached()
-  {
+  public int getCached() {
     return cached;
+  }
+
+  public int getDisk_space() {
+    return disk_space;
   }
 
   public boolean isStatus() {
     return status;
   }
-
-  public String getDisk_space() {
-    return disk_space;
-  }
-
-
-  @Override
-  public String toString()
-  {
-    return "Memory_Metrics{" +
-      "free='" + free + '\'' +
-      ", used='" + used + '\'' +
-      ", swap='" + swap + '\'' +
-      ", cached='" + cached + '\'' +
-      ", disk_space='" + disk_space + '\'' +
-      ", status=" + status +
-      '}';
-  }
-
   public JsonObject toJson()
   {
     return new JsonObject()
@@ -79,3 +61,5 @@ public class Memory_Metrics extends Metric
   }
 
 }
+
+

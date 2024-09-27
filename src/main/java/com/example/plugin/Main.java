@@ -1,8 +1,8 @@
 package com.example.plugin;
 
-import com.example.plugin.vertxplugin.DataCollector;
-import com.example.plugin.vertxplugin.PluginReceiver;
-import com.example.plugin.vertxplugin.PluginSender;
+import com.example.plugin.plugin.DataCollector;
+import com.example.plugin.plugin.PluginReceiver;
+import com.example.plugin.plugin.PluginSender;
 import io.vertx.core.*;
 import org.zeromq.ZContext;
 
@@ -20,8 +20,7 @@ public class Main
 
     var context = new ZContext();
 
-    CompositeFuture.all
-      (
+    Future.all(
         vertx.deployVerticle(new PluginReceiver(context),
           new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
         ),
@@ -39,7 +38,11 @@ public class Main
           System.out.println("All the vreticals are deployed");
         }
         else
+        {
+          System.out.println("System failure "+deploymentResult.cause());
+
           System.exit(1);
+        }
       });
   }
 }

@@ -1,4 +1,4 @@
-package com.example.plugin.vertxplugin;
+package com.example.plugin.plugin;
 
 import com.example.plugin.utils.Config;
 import io.vertx.core.AbstractVerticle;
@@ -9,25 +9,21 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import javax.swing.tree.TreeCellEditor;
-import java.io.FilterOutputStream;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class PluginSender extends AbstractVerticle
 {
 
-  AtomicInteger totalDeviceToSend;
+  private int totalDeviceToSend;
 
-  ZMQ.Socket dataSenderSocket;
+  private ZMQ.Socket dataSenderSocket;
 
-  final JsonArray dataToSend;
+  private final JsonArray dataToSend;
 
   public PluginSender(ZContext context)
   {
-    totalDeviceToSend = new AtomicInteger(0);
+    totalDeviceToSend = 0;
 
     try
     {
@@ -46,17 +42,16 @@ public class PluginSender extends AbstractVerticle
     }
     dataToSend = new JsonArray();
 
-
   }
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
     //listen for total provision devices
-    System.out.println("Sender loaded "+Thread.currentThread().getName());
     startPromise.complete();
+
     vertx.eventBus().<Integer>localConsumer("devicesLength",deviceLength->{
 
-      totalDeviceToSend.set(deviceLength.body());
+      totalDeviceToSend = deviceLength.body();
 
     });
 
@@ -66,24 +61,19 @@ public class PluginSender extends AbstractVerticle
 
       device->{
 
-        System.out.println("Received Device");
+      dataToSend.add(device.body());
 
+        System.out.println("Received Device "+dataToSend.size()+"\t"+totalDeviceToSend);
 
-        //if the datatosend reaches full potential we can send this
-
-        if(dataToSend.size()==totalDeviceToSend.get())
+        if(dataToSend.size()==totalDeviceToSend)
         {
 
           dataToSend.add(device.body().getString("metric"));
 
           dataToSend.add(LocalDateTime.now().toString());
 
-          vertx.eventBus().send("inner-eventbus",true);
 
-          //execute sendFinal(),but from the threda on which worker thred is deployed
-            System.out.println("Context "+context+"\t Thread "+Thread.currentThread().getName());
-
-            sendFinal();
+          sendFinal();
 
         }
 
@@ -93,23 +83,28 @@ public class PluginSender extends AbstractVerticle
 
   private void sendFinal()
   {
+
+    System.out.println("Before Sending "+dataToSend);
+
     var encodedData = Base64.getEncoder().encode(dataToSend.toString().getBytes());
 
     try
     {
-      boolean status =   dataSenderSocket.send(encodedData);
+      var status =   dataSenderSocket.send(encodedData);
 
       System.out.println("Status Send "+status);
     }
+
     catch (Exception exception)
     {
       System.out.println("Exception "+exception.getMessage());
     }
+
     dataToSend.clear();
 
-    totalDeviceToSend.set(0);
+    totalDeviceToSend = 0;
 
-    System.out.println("After sending "+dataToSend+"\t"+totalDeviceToSend.get());
+    System.out.println("After sending "+dataToSend+"\t"+totalDeviceToSend);
 
   }
 }

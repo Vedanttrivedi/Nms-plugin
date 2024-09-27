@@ -1,14 +1,14 @@
-package com.example.plugin.vertxplugin;
+package com.example.plugin.plugin;
 
 import com.example.plugin.models.Device;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.ThreadingModel;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import javax.xml.stream.FactoryConfigurationError;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 //This vertical listens plugin receiver for data
@@ -19,12 +19,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DataCollector extends AbstractVerticle
 {
   //First Maintain list of devices with map
-  ConcurrentHashMap<String, Device> provisionedDevices;
+  HashMap<String, Device> provisionedDevices;
 
   public DataCollector()
   {
 
-    provisionedDevices = new ConcurrentHashMap<>();
+    provisionedDevices = new HashMap<>();
 
   }
 
@@ -32,8 +32,35 @@ public class DataCollector extends AbstractVerticle
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
-      //listen for incoming calls from receiver
-    startPromise.complete();
+    //listen for incoming calls from receiver
+
+    //Deploy 5 instances of FetchDetails
+
+    for (int i = 0; i < 5; i++)
+    {
+
+    }
+
+    vertx.deployVerticle(FetchDetails.class.getName(),new DeploymentOptions().setInstances(5).setThreadingModel(ThreadingModel.WORKER),
+
+      fetchDeploymentResult->{
+        //Now we can distribute request to each vertical
+        if(fetchDeploymentResult.succeeded())
+        {
+          System.out.println("Deployment Result "+fetchDeploymentResult);
+
+          startPromise.complete();
+        }
+        else
+        {
+
+          startPromise.fail("Could Not Deploy Fetch Detail Vertical .System failure ");
+
+          System.out.println("Deployment Of ALL Vertical failed ");
+        }
+
+    });
+
     vertx.eventBus().<JsonArray>localConsumer("collector",
 
       collectorHandler->{
@@ -58,37 +85,21 @@ public class DataCollector extends AbstractVerticle
 
 
           vertx.eventBus().send("devicesLength",provisionedDevices.size());
+          provisionedDevices.forEach((ip,current_device)->{
 
-          vertx.deployVerticle(FetchDetails.class.getName(),new DeploymentOptions().setInstances(5),
+            var jsonDevice = new JsonObject();
 
-            fetchDeploymentResult->{
-              //Now we can distribute request to each vertical
-                if(fetchDeploymentResult.succeeded())
-                {
-                  System.out.println("Deployment Result "+fetchDeploymentResult);
+            jsonDevice.put("ip",ip);
 
-                  provisionedDevices.forEach((ip,current_device)->{
+            jsonDevice.put("username",current_device.username());
 
-                      var jsonDevice = new JsonObject();
+            jsonDevice.put("password",current_device.password());
 
-                      jsonDevice.put("ip",ip);
+            jsonDevice.put("metric",metric);
 
-                      jsonDevice.put("username",current_device.username());
+            vertx.eventBus().send("fetch-send",jsonDevice);
 
-                      jsonDevice.put("password",current_device.password());
-
-                      jsonDevice.put("metric",metric);
-
-                    vertx.eventBus().send("fetch-send",jsonDevice);
-
-                  });
-
-                }
-                else
-                {
-                  System.out.println("Deployment Of ALL Vertical failed ");
-                }
-            });
+          });
 
         }
         else
