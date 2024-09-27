@@ -111,7 +111,5 @@ public class PluginDataSender extends AbstractVerticle
 
     totalDeviceToSend = 0;
 
-    System.out.println("After sending "+dataToSend+"\t"+totalDeviceToSend);
-
   }
 }
