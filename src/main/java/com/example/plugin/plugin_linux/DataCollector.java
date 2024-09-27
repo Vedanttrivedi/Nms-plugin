@@ -1,4 +1,4 @@
-package com.example.plugin.plugin;
+package com.example.plugin.plugin_linux;
 
 import com.example.plugin.models.Device;
 import io.vertx.core.AbstractVerticle;
@@ -9,7 +9,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 //This vertical listens plugin receiver for data
 //It saves provisional devices
@@ -65,7 +64,6 @@ public class DataCollector extends AbstractVerticle
 
         var devicesSize = devices.size();
 
-        System.out.println("Collector received "+collectorHandler.body()+"\tLen "+devicesSize);
 
         if(devicesSize==1)
         {
@@ -78,8 +76,14 @@ public class DataCollector extends AbstractVerticle
 
           var metric =  devices.getJsonObject(0).getString("metric");
 
+          var metricAndLength = new JsonObject();
 
-          vertx.eventBus().send("devicesLength",provisionedDevices.size());
+          metricAndLength.put("metric",metric);
+
+          metricAndLength.put("devices",provisionedDevices.size());
+
+          vertx.eventBus().send("SetMetricAndLength",metricAndLength);
+
           provisionedDevices.forEach((ip,current_device)->{
 
             var jsonDevice = new JsonObject();

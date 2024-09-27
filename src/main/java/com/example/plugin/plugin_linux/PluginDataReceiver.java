@@ -1,4 +1,4 @@
-package com.example.plugin.plugin;
+package com.example.plugin.plugin_linux;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -13,11 +13,11 @@ import java.util.Base64;
 
 
 
-public class PluginReceiver extends AbstractVerticle
+public class PluginDataReceiver extends AbstractVerticle
 {
   private ZMQ.Socket pullSocket;
 
-  public PluginReceiver(ZContext context)
+  public PluginDataReceiver(ZContext context)
   {
     this.pullSocket = context.createSocket(SocketType.PULL);
 

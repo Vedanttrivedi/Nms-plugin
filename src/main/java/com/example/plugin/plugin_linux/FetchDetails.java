@@ -1,11 +1,10 @@
-package com.example.plugin.plugin;
+package com.example.plugin.plugin_linux;
 
 import com.example.plugin.models.Cpu_Metrics;
 import com.example.plugin.models.Memory_Metrics;
 import com.jcraft.jsch.*;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 
 import java.io.*;
@@ -40,7 +39,6 @@ public class FetchDetails extends AbstractVerticle
       var deviceMetricData=   connectAndExecuteCommands(jsonDevice.getString("username"),
         jsonDevice.getString("password"),jsonDevice.getString("ip"),jsonDevice.getString("metric") );
 
-      deviceMetricData.put("metric",jsonDevice.getString("metric"));
 
       vertx.eventBus().send("send",deviceMetricData);
 
@@ -48,7 +46,8 @@ public class FetchDetails extends AbstractVerticle
 
   }
 
-  public JsonObject connectAndExecuteCommands(String username, String password, String ip, String metric) {
+  public JsonObject connectAndExecuteCommands(String username, String password, String ip, String metric)
+  {
     try
     {
       var jsch = new JSch();
@@ -85,26 +84,30 @@ public class FetchDetails extends AbstractVerticle
 
       if (metric.equals("memory"))
       {
+
         var memoryJsonDevice =  parseMemoryMetrics(output, ip);
 
         return memoryJsonDevice;
 
       }
-      else if (metric.equals("cpu"))
-      {
         var cpuJsonDevice =  parseCpuMetrics(output, ip);
 
         return cpuJsonDevice;
-      }
 
     }
     catch (Exception exception)
     {
       System.out.println("Exception: " + exception.getMessage());
-      return new JsonObject(); // Return an empty JSON object on error
+
+      var errorObject = new JsonObject();
+
+      errorObject.put("status",false);
+
+      errorObject.put("ip",ip);
+
+      return errorObject; // Return an empty JSON object on error
     }
 
-    return new JsonObject();
   }
 
   // Method to execute a list of commands more efficiently

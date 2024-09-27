@@ -1,8 +1,8 @@
 package com.example.plugin;
 
-import com.example.plugin.plugin.DataCollector;
-import com.example.plugin.plugin.PluginReceiver;
-import com.example.plugin.plugin.PluginSender;
+import com.example.plugin.plugin_linux.DataCollector;
+import com.example.plugin.plugin_linux.PluginDataReceiver;
+import com.example.plugin.plugin_linux.PluginDataSender;
 import io.vertx.core.*;
 import org.zeromq.ZContext;
 
@@ -21,7 +21,7 @@ public class Main
     var context = new ZContext();
 
     Future.all(
-        vertx.deployVerticle(new PluginReceiver(context),
+        vertx.deployVerticle(new PluginDataReceiver(context),
           new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
         ),
 
@@ -29,7 +29,7 @@ public class Main
 
         vertx.deployVerticle(
 
-          new PluginSender(context))
+          new PluginDataSender(context))
       ).
       onComplete(deploymentResult->{
 

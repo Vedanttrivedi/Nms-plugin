@@ -1,4 +1,4 @@
-package com.example.plugin.plugin;
+package com.example.plugin.plugin_linux;
 
 import com.example.plugin.utils.Config;
 import io.vertx.core.AbstractVerticle;
@@ -12,7 +12,7 @@ import org.zeromq.ZMQ;
 import java.time.LocalDateTime;
 import java.util.Base64;
 
-public class PluginSender extends AbstractVerticle
+public class PluginDataSender extends AbstractVerticle
 {
 
   private int totalDeviceToSend;
@@ -21,9 +21,12 @@ public class PluginSender extends AbstractVerticle
 
   private final JsonArray dataToSend;
 
-  public PluginSender(ZContext context)
+  private Boolean isMemory;
+  public PluginDataSender(ZContext context)
   {
     totalDeviceToSend = 0;
+
+    isMemory = true;
 
     try
     {
@@ -49,9 +52,11 @@ public class PluginSender extends AbstractVerticle
     //listen for total provision devices
     startPromise.complete();
 
-    vertx.eventBus().<Integer>localConsumer("devicesLength",deviceLength->{
+    vertx.eventBus().<JsonObject>localConsumer("SetMetricAndLength",collectionInfo->{
 
-      totalDeviceToSend = deviceLength.body();
+      totalDeviceToSend = collectionInfo.body().getInteger("devices");
+
+      isMemory = collectionInfo.body().getString("metric").equals("memory");
 
     });
 
@@ -67,8 +72,10 @@ public class PluginSender extends AbstractVerticle
 
         if(dataToSend.size()==totalDeviceToSend)
         {
-
-          dataToSend.add(device.body().getString("metric"));
+          if(isMemory)
+            dataToSend.add("memory");
+          else
+            dataToSend.add("cpu");
 
           dataToSend.add(LocalDateTime.now().toString());
 
