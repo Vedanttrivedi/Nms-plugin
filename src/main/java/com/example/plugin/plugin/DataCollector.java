@@ -36,11 +36,6 @@ public class DataCollector extends AbstractVerticle
 
     //Deploy 5 instances of FetchDetails
 
-    for (int i = 0; i < 5; i++)
-    {
-
-    }
-
     vertx.deployVerticle(FetchDetails.class.getName(),new DeploymentOptions().setInstances(5).setThreadingModel(ThreadingModel.WORKER),
 
       fetchDeploymentResult->{
