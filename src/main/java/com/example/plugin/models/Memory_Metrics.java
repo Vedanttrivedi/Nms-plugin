@@ -1,5 +1,4 @@
 package com.example.plugin.models;
-
 import io.vertx.core.json.JsonObject;
 
 
@@ -13,7 +12,8 @@ public class Memory_Metrics extends Metric
   private boolean status;
 
 
-  public Memory_Metrics(String ip, int free, int used, int swap, int cached, int disk_space, boolean status) {
+  public Memory_Metrics(String ip, int free, int used, int swap, int cached, int disk_space, boolean status)
+  {
     super(ip);
     this.free = free;
     this.used = used;
@@ -23,31 +23,6 @@ public class Memory_Metrics extends Metric
     this.status = status;
   }
 
-
-  public int getFree()
-  {
-    return free;
-  }
-
-  public int getUsed() {
-    return used;
-  }
-
-  public int getSwap() {
-    return swap;
-  }
-
-  public int getCached() {
-    return cached;
-  }
-
-  public int getDisk_space() {
-    return disk_space;
-  }
-
-  public boolean isStatus() {
-    return status;
-  }
   public JsonObject toJson()
   {
     return new JsonObject()

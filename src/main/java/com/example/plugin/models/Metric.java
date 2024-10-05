@@ -1,6 +1,5 @@
 package com.example.plugin.models;
 
-import java.sql.Timestamp;
 
 public abstract class Metric
 {

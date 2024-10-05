@@ -2,12 +2,14 @@ package com.example.plugin.plugin_linux;
 
 import com.example.plugin.models.Cpu_Metrics;
 import com.example.plugin.models.Memory_Metrics;
+import com.example.plugin.utils.Config;
 import com.jcraft.jsch.*;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class FetchDetails extends AbstractVerticle
@@ -22,7 +24,7 @@ public class FetchDetails extends AbstractVerticle
     "iostat | awk 'NR==4 {print $4}'"             // I/O wait
   };
 
-  String memoryCommand = "free"; 
+  String memoryCommand = "free";
 
   String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
 
@@ -30,23 +32,42 @@ public class FetchDetails extends AbstractVerticle
   public void start(Promise<Void> startPromise) throws Exception
   {
 
-    vertx.eventBus().<JsonObject>localConsumer("fetch-send", device->{
+    vertx.eventBus().<JsonObject>localConsumer(Config.fetch, device ->
+    {
 
-      System.out.println("I received information to collect");
 
       var jsonDevice = device.body();
 
-      var deviceMetricData=   connectAndExecuteCommands(jsonDevice.getString("username"),
-        jsonDevice.getString("password"),jsonDevice.getString("ip"),jsonDevice.getString("metric") );
+      vertx.executeBlocking(fetchPromise ->
+      {
 
+        var deviceMetricData = connectAndExecuteCommands(jsonDevice.getString("username"),
+          jsonDevice.getString("password"), jsonDevice.getString("ip"), jsonDevice.getString("metric"));
 
-      vertx.eventBus().send("send",deviceMetricData);
+        deviceMetricData.put("time", LocalDateTime.now().toString());
+
+        deviceMetricData.put("metric", jsonDevice.getString("metric"));
+
+        fetchPromise.complete(deviceMetricData);
+
+      }, fetchFuture ->
+      {
+
+        if (fetchFuture.failed())
+          System.out.println("Not able to collect the details ");
+
+        else
+          vertx.eventBus().send(Config.send, fetchFuture.result());
+
+      });
 
     });
 
+    startPromise.complete();
+
   }
 
-  public JsonObject connectAndExecuteCommands(String username, String password, String ip, String metric)
+  private JsonObject connectAndExecuteCommands(String username, String password, String ip, String metric)
   {
     try
     {
@@ -64,7 +85,6 @@ public class FetchDetails extends AbstractVerticle
 
       var commands = new ArrayList<String>();
 
-      // Add commands based on the metric type
       if (metric.equals("memory"))
       {
         commands.add(memoryCommand);
@@ -76,41 +96,35 @@ public class FetchDetails extends AbstractVerticle
         commands.addAll(Arrays.asList(cpuMetricsCommand)); // Add CPU commands
       }
 
+
       List<String> output = executeCommands(session, commands);
 
-      System.out.println("Output Commands "+output);
 
       session.disconnect();
 
       if (metric.equals("memory"))
-      {
+        return  parseMemoryMetrics(output, ip);
 
-        var memoryJsonDevice =  parseMemoryMetrics(output, ip);
-
-        return memoryJsonDevice;
-
-      }
-        var cpuJsonDevice =  parseCpuMetrics(output, ip);
-
-        return cpuJsonDevice;
+     return parseCpuMetrics(output, ip);
 
     }
     catch (Exception exception)
     {
+
       System.out.println("Exception: " + exception.getMessage());
 
       var errorObject = new JsonObject();
 
-      errorObject.put("status",false);
+      errorObject.put("status", false);
 
-      errorObject.put("ip",ip);
+      errorObject.put("ip", ip);
 
-      return errorObject; // Return an empty JSON object on error
+      return errorObject;
+
     }
 
   }
 
-  // Method to execute a list of commands more efficiently
   private static List<String> executeCommands(Session session, List<String> commands)
   {
     var results = new ArrayList<String>();
@@ -137,12 +151,12 @@ public class FetchDetails extends AbstractVerticle
 
         String line;
 
-        while ((line = reader.readLine()) != null) {
-          if(line.contains(","))
+        while ((line = reader.readLine()) != null)
+        {
+          if (line.contains(","))
           {
-            System.out.println("Comma Found! "+line);
 
-            line = line.substring(0,line.length()-1);
+            line = line.substring(0, line.length() - 1);
 
           }
           output.append(line).append("\n");
@@ -155,7 +169,7 @@ public class FetchDetails extends AbstractVerticle
     }
     catch (Exception e)
     {
-      e.printStackTrace();
+      System.out.println(e.getMessage());
     }
     finally
     {
@@ -212,24 +226,3 @@ public class FetchDetails extends AbstractVerticle
   }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
