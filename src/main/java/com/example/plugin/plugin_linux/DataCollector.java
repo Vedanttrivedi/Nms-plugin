@@ -31,9 +31,6 @@ public class DataCollector extends AbstractVerticle
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
-    //listen for incoming calls from receiver
-
-    //Deploy 5 instances of FetchDetails
 
     vertx.deployVerticle(FetchDetails.class.getName(), new DeploymentOptions().setInstances(5),
       handler->{
@@ -45,7 +42,6 @@ public class DataCollector extends AbstractVerticle
     vertx.eventBus().<JsonArray>localConsumer(Config.collector,
 
     collectorHandler->{
-
 
         var devices = collectorHandler.body();
 
@@ -101,7 +97,6 @@ public class DataCollector extends AbstractVerticle
                 new Device(
                   jsonDevice.getString("ip"),
                   jsonDevice.getString("username"),
-                  //Utils.decryptPassword(jsonDevice.getString("password"),secretKey,encryptionAlgorithm)//
                   jsonDevice.getString("password")
                 )
               );

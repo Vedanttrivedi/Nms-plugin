@@ -28,7 +28,6 @@ public class AppDataReceiver2 extends Thread
 
   public void run()
   {
-
     while(true)
     {
       var data = pullSocket.recvStr();

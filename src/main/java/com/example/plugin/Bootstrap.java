@@ -23,23 +23,18 @@ public class Bootstrap
 
         if(deploymentResult.succeeded())
         {
-
           System.out.println("All the verticals are deployed");
-
         }
         else
         {
           System.out.println("System failure "+deploymentResult.cause());
-
         }
       });
 
     var dataReceiverThread = new AppDataReceiver(zcontext,vertx);
-
     dataReceiverThread.start();
 
     var dataReceiverThread2 = new AppDataReceiver2(zcontext,vertx);
-
     dataReceiverThread2.start();
 
   }

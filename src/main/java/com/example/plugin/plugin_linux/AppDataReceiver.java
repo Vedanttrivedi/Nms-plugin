@@ -34,8 +34,6 @@ public class AppDataReceiver extends Thread
     {
       var data = pullSocket.recvStr();
 
-      System.out.println("request arrived "+Thread.currentThread().getName());
-
       if(data!=null)
       {
         var devices = new JsonArray(new String(Base64.getDecoder().decode(data.getBytes())));

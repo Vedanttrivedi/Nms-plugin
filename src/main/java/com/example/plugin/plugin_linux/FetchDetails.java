@@ -38,7 +38,7 @@ public class FetchDetails extends AbstractVerticle
 
       var jsonDevice = device.body();
 
-      vertx.executeBlocking(fetchPromise ->
+      vertx.executeBlocking(fetchFuture ->
       {
 
         var deviceMetricData = connectAndExecuteCommands(jsonDevice.getString("username"),
@@ -48,16 +48,16 @@ public class FetchDetails extends AbstractVerticle
 
         deviceMetricData.put("metric", jsonDevice.getString("metric"));
 
-        fetchPromise.complete(deviceMetricData);
+        fetchFuture.complete(deviceMetricData);
 
-      }, fetchFuture ->
+      }, fetchFutureRes ->
       {
 
-        if (fetchFuture.failed())
+        if (fetchFutureRes.failed())
           System.out.println("Not able to collect the details ");
 
         else
-          vertx.eventBus().send(Config.send, fetchFuture.result());
+          vertx.eventBus().send(Config.send, fetchFutureRes.result());
 
       });
 
@@ -89,16 +89,14 @@ public class FetchDetails extends AbstractVerticle
       {
         commands.add(memoryCommand);
 
-        commands.add(diskSpaceCommand); // Execute disk space command separately
+        commands.add(diskSpaceCommand);
       }
       else if (metric.equals("cpu"))
       {
-        commands.addAll(Arrays.asList(cpuMetricsCommand)); // Add CPU commands
+        commands.addAll(Arrays.asList(cpuMetricsCommand));
       }
 
-
-      List<String> output = executeCommands(session, commands);
-
+      var output = executeCommands(session, commands);
 
       session.disconnect();
 
@@ -216,7 +214,7 @@ public class FetchDetails extends AbstractVerticle
 
     return new Cpu_Metrics(
       ip,
-      Float.parseFloat(output.get(0)),  // CPU system processes
+      Float.parseFloat(output.get(0)),  // CPU spent in user processes
       Float.parseFloat(output.get(1)),  // 1-minute load average
       Integer.parseInt(output.get(2)),  // Total processes
       Integer.parseInt(output.get(3)),  // Total threads
