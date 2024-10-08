@@ -25,7 +25,7 @@ public class AppDataSender extends AbstractVerticle
     }
     catch (Exception exception)
     {
-      System.out.println("Eerror Establishing socket ");
+      System.out.println("Error Establishing socket!");
     }
 
   }
@@ -38,8 +38,7 @@ public class AppDataSender extends AbstractVerticle
 
       var encodedData = Base64.getEncoder().encode(device.body().toString().getBytes());
 
-      var status = dataSenderSocket.send(encodedData,ZMQ.DONTWAIT);
-
+      dataSenderSocket.send(encodedData,ZMQ.DONTWAIT);
 
     });
 

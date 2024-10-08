@@ -1,6 +1,5 @@
 package com.example.plugin;
 
-import com.example.plugin.plugin_linux.AppDataReceiver2;
 import com.example.plugin.plugin_linux.DataCollector;
 import com.example.plugin.plugin_linux.AppDataReceiver;
 import com.example.plugin.plugin_linux.AppDataSender;
@@ -17,9 +16,15 @@ public class Bootstrap
 
     var zcontext = new ZContext();
 
+    var dataReceiverThread = new AppDataReceiver(zcontext,vertx);
+
+    dataReceiverThread.start();
+
     vertx.deployVerticle(new DataCollector())
-      .compose(deploymentId->vertx.deployVerticle(new AppDataSender(zcontext)))
-      .onComplete(deploymentResult->{
+
+    .compose(deploymentId->vertx.deployVerticle(new AppDataSender(zcontext)))
+
+    .onComplete(deploymentResult->{
 
         if(deploymentResult.succeeded())
         {
@@ -30,12 +35,6 @@ public class Bootstrap
           System.out.println("System failure "+deploymentResult.cause());
         }
       });
-
-    var dataReceiverThread = new AppDataReceiver(zcontext,vertx);
-    dataReceiverThread.start();
-
-    var dataReceiverThread2 = new AppDataReceiver2(zcontext,vertx);
-    dataReceiverThread2.start();
 
   }
 }

@@ -18,7 +18,8 @@ import java.util.Map;
 public class DataCollector extends AbstractVerticle
 {
   //First Maintain list of devices with map
-  private  Map<String, Device> provisionedDevices;
+
+  private final Map<String, Device> provisionedDevices;
 
   public DataCollector()
   {
@@ -45,10 +46,7 @@ public class DataCollector extends AbstractVerticle
 
         var devices = collectorHandler.body();
 
-        var devicesSize = devices.size();
-
-
-        if(devicesSize==1)
+        if(devices.size()==1)
         {
           //it is periodic request
 
@@ -57,13 +55,6 @@ public class DataCollector extends AbstractVerticle
           //so sender waits for all the devices to send at once
 
           var metric =  devices.getJsonObject(0).getString("metric");
-
-          var metricAndLength = new JsonObject();
-
-          metricAndLength.put("metric",metric);
-
-          metricAndLength.put("devices",provisionedDevices.size());
-
 
           provisionedDevices.forEach((ip,current_device)->{
 
@@ -84,7 +75,7 @@ public class DataCollector extends AbstractVerticle
         }
         else
         {
-          devices.remove(devicesSize- 1);//remove the initial extra object
+          devices.remove(devices.size()- 1);//remove the initial extra object
 
           devices.forEach(device ->
           {
@@ -118,7 +109,6 @@ public class DataCollector extends AbstractVerticle
   @Override
   public void stop(Promise<Void> stopPromise) throws Exception
   {
-
     super.stop(stopPromise);
   }
 }

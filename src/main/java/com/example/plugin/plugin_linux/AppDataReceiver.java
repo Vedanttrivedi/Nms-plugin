@@ -18,13 +18,11 @@ public class AppDataReceiver extends Thread
 
   public AppDataReceiver(ZContext context, Vertx vertx)
   {
-
     this.pullSocket = context.createSocket(SocketType.PULL);
 
     pullSocket.connect(Config.PULL_SOCKET);
 
     this.vertx = vertx;
-
   }
 
   public void run()
@@ -32,6 +30,7 @@ public class AppDataReceiver extends Thread
 
     while(true)
     {
+
       var data = pullSocket.recvStr();
 
       if(data!=null)
@@ -42,6 +41,5 @@ public class AppDataReceiver extends Thread
 
       }
     }
-
   }
 }

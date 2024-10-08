@@ -15,18 +15,17 @@ import java.util.*;
 public class FetchDetails extends AbstractVerticle
 {
 
-  // CPU metrics command
-  String[] cpuMetricsCommand = {
+  static String[] cpuMetricsCommand = {
     "top -bn1 | grep '%Cpu' | awk '{print $2}'",   // CPU spent in system processes
     "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'", // 1-minute load average
-    "ps aux | wc -l",                             // Count total no of running processes
+    "ps aux | wc -l",                             // Count total no of  processes
     "ps -eLF | wc -l",                            // Count total threads
     "iostat | awk 'NR==4 {print $4}'"             // I/O wait
   };
 
-  String memoryCommand = "free";
+  static String memoryCommand = "free";
 
-  String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
+  static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception
@@ -34,7 +33,6 @@ public class FetchDetails extends AbstractVerticle
 
     vertx.eventBus().<JsonObject>localConsumer(Config.fetch, device ->
     {
-
 
       var jsonDevice = device.body();
 
@@ -186,39 +184,36 @@ public class FetchDetails extends AbstractVerticle
 
   private JsonObject parseMemoryMetrics(List<String> output, String ip)
   {
-    var memoryOutput = output.get(0); // Memory command output
+    var memoryOutput = output.get(0);
 
-    var diskSpaceOutput = output.size() > 1 ? output.get(1) : "0"; // Disk space output (if available)
+    var diskSpaceOutput = output.size() > 1 ? output.get(1) : "0";
 
     var lines = memoryOutput.split("\n");
 
-    // The second line (Mem:) contains free, used, and cache memory
     var memoryData = lines[1].split("\\s+");
 
-    // The third line (Swap:) contains swap memory info
     var swapData = lines[2].split("\\s+");
 
     return new Memory_Metrics(
       ip,
-      Integer.parseInt(memoryData[3]),  // Free memory
-      Integer.parseInt(memoryData[2]),  // Used memory
-      Integer.parseInt(swapData[1]),    // Swap memory
-      Integer.parseInt(memoryData[5]),  // Cache memory
-      Integer.parseInt(diskSpaceOutput), // Disk space
+      Integer.parseInt(memoryData[3]),
+      Integer.parseInt(memoryData[2]),
+      Integer.parseInt(swapData[1]),
+      Integer.parseInt(memoryData[5]),
+      Integer.parseInt(diskSpaceOutput),
       true).toJson();
   }
 
-  // Parsing the output of CPU metrics
   private JsonObject parseCpuMetrics(List<String> output, String ip)
   {
 
     return new Cpu_Metrics(
       ip,
-      Float.parseFloat(output.get(0)),  // CPU spent in user processes
-      Float.parseFloat(output.get(1)),  // 1-minute load average
-      Integer.parseInt(output.get(2)),  // Total processes
-      Integer.parseInt(output.get(3)),  // Total threads
-      Float.parseFloat(output.get(4)),  // I/O wait
+      Float.parseFloat(output.get(0)),
+      Float.parseFloat(output.get(1)),
+      Integer.parseInt(output.get(2)),
+      Integer.parseInt(output.get(3)),
+      Float.parseFloat(output.get(4)),
       true).toJson();
 
   }
