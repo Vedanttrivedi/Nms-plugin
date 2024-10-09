@@ -6,9 +6,10 @@ public class Config
 
   public final static String PULL_SOCKET = "tcp://localhost:4555";
 
-  public final static String collector = "collector";
-  public final static String fetch = "fetch";
-  public final static String send = "send";
+  public final static String COLLECTOR = "collector";
+  public final static String FETCH = "fetch";
+  public final static String SEND = "send";
+  public final static int FETCH_INSTANCES = 5;
 
 
 }

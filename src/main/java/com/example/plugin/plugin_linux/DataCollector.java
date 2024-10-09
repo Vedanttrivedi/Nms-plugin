@@ -33,14 +33,14 @@ public class DataCollector extends AbstractVerticle
   public void start(Promise<Void> startPromise) throws Exception
   {
 
-    vertx.deployVerticle(FetchDetails.class.getName(), new DeploymentOptions().setInstances(5),
+    vertx.deployVerticle(FetchDetails.class.getName(), new DeploymentOptions().setInstances(Config.FETCH_INSTANCES),
       handler->{
       if(handler.failed())
         System.out.println("Something went wrong while deplying fetch details "+handler.cause());
 
     });
 
-    vertx.eventBus().<JsonArray>localConsumer(Config.collector,
+    vertx.eventBus().<JsonArray>localConsumer(Config.COLLECTOR,
 
     collectorHandler->{
 
@@ -49,7 +49,6 @@ public class DataCollector extends AbstractVerticle
         if(devices.size()==1)
         {
           //it is periodic request
-
           //Deploy 5 verticals to distribute all provision devices request
           //Use Send And it will load balance and also send the list of available devices length to sender
           //so sender waits for all the devices to send at once
@@ -68,7 +67,7 @@ public class DataCollector extends AbstractVerticle
 
             jsonDevice.put("metric",metric);
 
-            vertx.eventBus().send(Config.fetch,jsonDevice);
+            vertx.eventBus().send(Config.FETCH,jsonDevice);
 
           });
 

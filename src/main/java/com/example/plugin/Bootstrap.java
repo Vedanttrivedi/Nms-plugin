@@ -30,11 +30,13 @@ public class Bootstrap
         {
           System.out.println("All the verticals are deployed");
         }
+
         else
         {
           System.out.println("System failure "+deploymentResult.cause());
         }
-      });
+
+    });
 
   }
 }

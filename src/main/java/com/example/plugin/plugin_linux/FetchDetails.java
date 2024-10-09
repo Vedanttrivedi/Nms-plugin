@@ -15,7 +15,7 @@ import java.util.*;
 public class FetchDetails extends AbstractVerticle
 {
 
-  static String[] cpuMetricsCommand = {
+  final static String[] cpuMetricsCommand = {
     "top -bn1 | grep '%Cpu' | awk '{print $2}'",   // CPU spent in system processes
     "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'", // 1-minute load average
     "ps aux | wc -l",                             // Count total no of  processes
@@ -23,15 +23,15 @@ public class FetchDetails extends AbstractVerticle
     "iostat | awk 'NR==4 {print $4}'"             // I/O wait
   };
 
-  static String memoryCommand = "free";
+  final  String memoryCommand = "free";
 
-  static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
+  final static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
 
-    vertx.eventBus().<JsonObject>localConsumer(Config.fetch, device ->
+    vertx.eventBus().<JsonObject>localConsumer(Config.FETCH, device ->
     {
 
       var jsonDevice = device.body();
@@ -48,14 +48,14 @@ public class FetchDetails extends AbstractVerticle
 
         fetchFuture.complete(deviceMetricData);
 
-      }, fetchFutureRes ->
+      },false, fetchFutureRes ->
       {
 
         if (fetchFutureRes.failed())
           System.out.println("Not able to collect the details ");
 
         else
-          vertx.eventBus().send(Config.send, fetchFutureRes.result());
+          vertx.eventBus().send(Config.SEND, fetchFutureRes.result());
 
       });
 

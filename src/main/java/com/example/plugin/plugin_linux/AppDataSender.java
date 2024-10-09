@@ -32,9 +32,11 @@ public class AppDataSender extends AbstractVerticle
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
-    vertx.eventBus().<JsonObject>localConsumer(Config.send,
+    vertx.eventBus().<JsonObject>localConsumer(Config.SEND,
 
       device->{
+
+      System.out.println("Sending "+device.body());
 
       var encodedData = Base64.getEncoder().encode(device.body().toString().getBytes());
 
