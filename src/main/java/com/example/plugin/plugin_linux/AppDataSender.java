@@ -7,7 +7,6 @@ import io.vertx.core.json.JsonObject;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
-import java.util.Base64;
 
 public class AppDataSender extends AbstractVerticle
 {
@@ -23,12 +22,14 @@ public class AppDataSender extends AbstractVerticle
       dataSenderSocket.bind(Config.PUSH_SOCKET);
 
     }
+
     catch (Exception exception)
     {
       System.out.println("Error Establishing socket!");
     }
 
   }
+
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
@@ -37,11 +38,7 @@ public class AppDataSender extends AbstractVerticle
 
       device->{
 
-      System.out.println("Sending "+device.body());
-
-      var encodedData = Base64.getEncoder().encode(device.body().toString().getBytes());
-
-      dataSenderSocket.send(encodedData,ZMQ.DONTWAIT);
+      dataSenderSocket.send(device.body().toString().getBytes(),ZMQ.DONTWAIT);
 
     });
 
