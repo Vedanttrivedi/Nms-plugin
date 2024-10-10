@@ -32,6 +32,7 @@ public class AppDataSender extends AbstractVerticle
   @Override
   public void start(Promise<Void> startPromise) throws Exception
   {
+
     vertx.eventBus().<JsonObject>localConsumer(Config.SEND,
 
       device->{

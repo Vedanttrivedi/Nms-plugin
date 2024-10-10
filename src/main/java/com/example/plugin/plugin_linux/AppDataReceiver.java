@@ -35,11 +35,13 @@ public class AppDataReceiver extends Thread
 
       if(data!=null)
       {
-        var devices = new JsonArray(new String(Base64.getDecoder().decode(data.getBytes())));
+
+        var devices = new JsonArray(new String(data.getBytes()));
 
         vertx.eventBus().send(Config.COLLECTOR,devices);
 
       }
+
     }
   }
 }
