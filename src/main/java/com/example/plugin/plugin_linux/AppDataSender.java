@@ -1,5 +1,6 @@
 package com.example.plugin.plugin_linux;
 
+import com.example.plugin.Bootstrap;
 import com.example.plugin.utils.Config;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -11,15 +12,15 @@ import org.zeromq.ZMQ;
 public class AppDataSender extends AbstractVerticle
 {
 
-  private ZMQ.Socket dataSenderSocket;
+  private  ZMQ.Socket socket;
 
-  public AppDataSender(ZContext context)
+  public AppDataSender()
   {
     try
     {
-      dataSenderSocket = context.createSocket(SocketType.PUSH);
+      socket = Bootstrap.zContext.createSocket(SocketType.PUSH);
 
-      dataSenderSocket.bind(Config.PUSH_SOCKET);
+      socket.bind(Config.PUSH_SOCKET);
 
     }
 
@@ -27,7 +28,6 @@ public class AppDataSender extends AbstractVerticle
     {
       System.out.println("Error Establishing socket!");
     }
-
   }
 
   @Override
@@ -38,7 +38,7 @@ public class AppDataSender extends AbstractVerticle
 
       device->{
 
-      dataSenderSocket.send(device.body().toString().getBytes(),ZMQ.DONTWAIT);
+        socket.send(device.body().toString().getBytes(),ZMQ.DONTWAIT);
 
     });
 

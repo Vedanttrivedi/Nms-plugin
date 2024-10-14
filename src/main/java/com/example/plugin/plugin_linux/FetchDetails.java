@@ -52,7 +52,7 @@ public class FetchDetails extends AbstractVerticle
       {
 
         if (fetchFutureRes.failed())
-          System.out.println("Not able to collect the details ");
+          System.out.println("Not able to collect the details for "+device);
 
         else
           vertx.eventBus().send(Config.SEND, fetchFutureRes.result());

@@ -9,20 +9,20 @@ import org.zeromq.ZContext;
 public class Bootstrap
 {
 
+  public static ZContext zContext = new ZContext();
+
+  public static Vertx vertx = Vertx.vertx();
+
   public static void main(String[] args)
   {
 
-    var vertx = Vertx.vertx();
-
-    var zcontext = new ZContext();
-
-    var dataReceiverThread = new AppDataReceiver(zcontext,vertx);
+    var dataReceiverThread = new AppDataReceiver();
 
     dataReceiverThread.start();
 
     vertx.deployVerticle(new DataCollector())
 
-    .compose(deploymentId->vertx.deployVerticle(new AppDataSender(zcontext)))
+    .compose(deploymentId->vertx.deployVerticle(new AppDataSender()))
 
     .onComplete(deploymentResult->{
 
@@ -37,6 +37,5 @@ public class Bootstrap
         }
 
     });
-
   }
 }

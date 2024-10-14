@@ -1,5 +1,6 @@
 package com.example.plugin.plugin_linux;
 
+import com.example.plugin.Bootstrap;
 import com.example.plugin.utils.Config;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -7,22 +8,16 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import java.util.Base64;
-
 public class AppDataReceiver extends Thread
 {
+  private final ZMQ.Socket socket;
 
-  private final ZMQ.Socket pullSocket;
-
-  private Vertx vertx;
-
-  public AppDataReceiver(ZContext context, Vertx vertx)
+  public AppDataReceiver()
   {
-    this.pullSocket = context.createSocket(SocketType.PULL);
+    this.socket = Bootstrap.zContext.createSocket(SocketType.PULL);
 
-    pullSocket.connect(Config.PULL_SOCKET);
+    socket.connect(Config.PULL_SOCKET);
 
-    this.vertx = vertx;
   }
 
   public void run()
@@ -31,14 +26,14 @@ public class AppDataReceiver extends Thread
     while(true)
     {
 
-      var data = pullSocket.recvStr();
+      var data = socket.recvStr();
 
       if(data!=null)
       {
 
         var devices = new JsonArray(new String(data.getBytes()));
 
-        vertx.eventBus().send(Config.COLLECTOR,devices);
+        Bootstrap.vertx.eventBus().send(Config.COLLECTOR,devices);
 
       }
 

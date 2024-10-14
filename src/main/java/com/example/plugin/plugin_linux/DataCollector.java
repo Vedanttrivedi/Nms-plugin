@@ -35,6 +35,7 @@ public class DataCollector extends AbstractVerticle
 
     vertx.deployVerticle(FetchDetails.class.getName(), new DeploymentOptions().setInstances(Config.FETCH_INSTANCES),
       handler->{
+
       if(handler.failed())
         System.out.println("Something went wrong while deplying fetch details "+handler.cause());
 
@@ -82,6 +83,7 @@ public class DataCollector extends AbstractVerticle
 
             if (jsonDevice.getBoolean("doPolling"))
             {
+
               provisionedDevices.put(
                 jsonDevice.getString("ip"),
                 new Device(
@@ -105,9 +107,11 @@ public class DataCollector extends AbstractVerticle
 
   }
 
+
   @Override
   public void stop(Promise<Void> stopPromise) throws Exception
   {
     super.stop(stopPromise);
   }
+
 }
