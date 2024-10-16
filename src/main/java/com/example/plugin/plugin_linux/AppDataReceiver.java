@@ -5,7 +5,6 @@ import com.example.plugin.utils.Config;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import org.zeromq.SocketType;
-import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
 public class AppDataReceiver extends Thread

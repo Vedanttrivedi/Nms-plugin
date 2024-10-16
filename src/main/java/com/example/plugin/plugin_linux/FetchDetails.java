@@ -23,7 +23,7 @@ public class FetchDetails extends AbstractVerticle
     "iostat | awk 'NR==4 {print $4}'"             // I/O wait
   };
 
-  final  String memoryCommand = "free";
+  final static String memoryCommand = "free";
 
   final static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
 

@@ -33,53 +33,43 @@ public class DataCollector extends AbstractVerticle
   public void start(Promise<Void> startPromise) throws Exception
   {
 
-    vertx.deployVerticle(FetchDetails.class.getName(), new DeploymentOptions().setInstances(Config.FETCH_INSTANCES),
-      handler->{
-
-      if(handler.failed())
-        System.out.println("Something went wrong while deplying fetch details "+handler.cause());
-
-    });
-
-    vertx.eventBus().<JsonArray>localConsumer(Config.COLLECTOR,
-
-    collectorHandler->{
+    vertx.eventBus().<JsonArray>localConsumer(Config.COLLECTOR, collectorHandler ->
+      {
 
         var devices = collectorHandler.body();
 
-        if(devices.size()==1)
+        if (devices.size() == 1)
         {
           //it is periodic request
-          //Deploy 5 verticals to distribute all provision devices request
           //Use Send And it will load balance and also send the list of available devices length to sender
-          //so sender waits for all the devices to send at once
 
-          var metric =  devices.getJsonObject(0).getString("metric");
+          var metric = devices.getJsonObject(0).getString("metric");
 
-          provisionedDevices.forEach((ip,current_device)->{
+          provisionedDevices.forEach((ip, current_device) ->
+          {
 
             var jsonDevice = new JsonObject();
 
-            jsonDevice.put("ip",ip);
+            jsonDevice.put("ip", ip);
 
-            jsonDevice.put("username",current_device.username());
+            jsonDevice.put("username", current_device.username());
 
-            jsonDevice.put("password",current_device.password());
+            jsonDevice.put("password", current_device.password());
 
-            jsonDevice.put("metric",metric);
+            jsonDevice.put("metric", metric);
 
-            vertx.eventBus().send(Config.FETCH,jsonDevice);
+            vertx.eventBus().send(Config.FETCH, jsonDevice);
 
           });
 
         }
         else
         {
-          devices.remove(devices.size()- 1);//remove the initial extra object
+          devices.remove(devices.size() - 1);//remove the initial extra object
 
           devices.forEach(device ->
           {
-            var jsonDevice = (JsonObject)device;
+            var jsonDevice = (JsonObject) device;
 
             if (jsonDevice.getBoolean("doPolling"))
             {

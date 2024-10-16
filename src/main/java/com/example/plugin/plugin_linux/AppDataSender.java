@@ -4,6 +4,7 @@ import com.example.plugin.Bootstrap;
 import com.example.plugin.utils.Config;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -39,6 +40,7 @@ public class AppDataSender extends AbstractVerticle
       device->{
 
         socket.send(device.body().toString().getBytes(),ZMQ.DONTWAIT);
+
 
     });
 
