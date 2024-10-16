@@ -17,7 +17,6 @@ import java.util.Map;
 
 public class DataCollector extends AbstractVerticle
 {
-  //First Maintain list of devices with map
 
   private final Map<String, Device> provisionedDevices;
 

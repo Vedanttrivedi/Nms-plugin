@@ -39,8 +39,7 @@ public class FetchDetails extends AbstractVerticle
       vertx.executeBlocking(fetchFuture ->
       {
 
-        var deviceMetricData = connectAndExecuteCommands(jsonDevice.getString("username"),
-          jsonDevice.getString("password"), jsonDevice.getString("ip"), jsonDevice.getString("metric"));
+        var deviceMetricData = connectAndExecuteCommands(jsonDevice.getString("username"), jsonDevice.getString("password"), jsonDevice.getString("ip"), jsonDevice.getString("metric"));
 
         deviceMetricData.put("time", LocalDateTime.now().toString());
 
@@ -106,7 +105,6 @@ public class FetchDetails extends AbstractVerticle
     }
     catch (Exception exception)
     {
-
       System.out.println("Exception: " + exception.getMessage());
 
       var errorObject = new JsonObject();
@@ -196,11 +194,17 @@ public class FetchDetails extends AbstractVerticle
 
     return new Memory_Metrics(
       ip,
+
       Integer.parseInt(memoryData[3]),
+
       Integer.parseInt(memoryData[2]),
+
       Integer.parseInt(swapData[1]),
+
       Integer.parseInt(memoryData[5]),
+
       Integer.parseInt(diskSpaceOutput),
+
       true).toJson();
   }
 
@@ -210,10 +214,15 @@ public class FetchDetails extends AbstractVerticle
     return new Cpu_Metrics(
       ip,
       Float.parseFloat(output.get(0)),
+
       Float.parseFloat(output.get(1)),
+
       Integer.parseInt(output.get(2)),
+
       Integer.parseInt(output.get(3)),
+
       Float.parseFloat(output.get(4)),
+
       true).toJson();
 
   }
