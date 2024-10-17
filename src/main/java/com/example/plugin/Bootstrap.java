@@ -10,6 +10,7 @@ import org.zeromq.ZContext;
 
 public class Bootstrap
 {
+
   public static final ZContext zContext = new ZContext();
 
   public static final Vertx vertx = Vertx.vertx();

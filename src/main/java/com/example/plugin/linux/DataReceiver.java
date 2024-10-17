@@ -30,9 +30,7 @@ public class DataReceiver extends Thread
       if(data!=null)
       {
 
-        var devices = new JsonArray(new String(data.getBytes()));
-
-        Bootstrap.vertx.eventBus().send(Config.COLLECTOR,devices);
+        Bootstrap.vertx.eventBus().send(Config.COLLECTOR,new JsonArray(new String(data.getBytes())));
 
       }
 
