@@ -1,21 +1,19 @@
-package com.example.plugin.plugin_linux;
+package com.example.plugin.linux;
 
 import com.example.plugin.Bootstrap;
 import com.example.plugin.utils.Config;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.zeromq.SocketType;
-import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-public class AppDataSender extends AbstractVerticle
+public class DataSender extends AbstractVerticle
 {
 
   private  ZMQ.Socket socket;
 
-  public AppDataSender()
+  public DataSender()
   {
     try
     {
@@ -41,8 +39,7 @@ public class AppDataSender extends AbstractVerticle
 
         socket.send(device.body().toString().getBytes(),ZMQ.DONTWAIT);
 
-
-    });
+      });
 
     startPromise.complete();
 

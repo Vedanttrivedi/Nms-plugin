@@ -1,18 +1,18 @@
-package com.example.plugin.plugin_linux;
+package com.example.plugin.linux;
 
 import com.example.plugin.Bootstrap;
 import com.example.plugin.utils.Config;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 
-public class AppDataReceiver extends Thread
+public class DataReceiver extends Thread
 {
   private final ZMQ.Socket socket;
 
-  public AppDataReceiver()
+  public DataReceiver()
   {
+
     this.socket = Bootstrap.zContext.createSocket(SocketType.PULL);
 
     socket.connect(Config.PULL_SOCKET);

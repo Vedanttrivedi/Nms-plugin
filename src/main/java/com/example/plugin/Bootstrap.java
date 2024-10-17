@@ -1,9 +1,9 @@
 package com.example.plugin;
 
-import com.example.plugin.plugin_linux.DataCollector;
-import com.example.plugin.plugin_linux.AppDataReceiver;
-import com.example.plugin.plugin_linux.AppDataSender;
-import com.example.plugin.plugin_linux.FetchDetails;
+import com.example.plugin.linux.DataCollector;
+import com.example.plugin.linux.DataReceiver;
+import com.example.plugin.linux.DataSender;
+import com.example.plugin.linux.FetchDetails;
 import com.example.plugin.utils.Config;
 import io.vertx.core.*;
 import org.zeromq.ZContext;
@@ -17,14 +17,14 @@ public class Bootstrap
   public static void main(String[] args)
   {
 
-    new AppDataReceiver().start();
+    new DataReceiver().start();
 
     vertx.deployVerticle(new DataCollector())
 
     .compose(result->vertx.deployVerticle(FetchDetails.class.getName(),
       new DeploymentOptions().setInstances(Config.FETCH_INSTANCES)))
 
-    .compose(result->vertx.deployVerticle(new AppDataSender()))
+    .compose(result->vertx.deployVerticle(new DataSender()))
 
     .onComplete(deploymentResult->{
 

@@ -2,7 +2,7 @@ package com.example.plugin.models;
 import io.vertx.core.json.JsonObject;
 
 
-public class Memory_Metrics extends Metric
+public class MemoryMetrics extends Metric
 {
   private int free;
   private int used;
@@ -12,7 +12,7 @@ public class Memory_Metrics extends Metric
   private boolean status;
 
 
-  public Memory_Metrics(String ip, int free, int used, int swap, int cached, int disk_space, boolean status)
+  public MemoryMetrics(String ip, int free, int used, int swap, int cached, int disk_space, boolean status)
   {
     super(ip);
     this.free = free;

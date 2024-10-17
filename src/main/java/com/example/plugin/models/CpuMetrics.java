@@ -2,7 +2,7 @@ package com.example.plugin.models;
 
 import io.vertx.core.json.JsonObject;
 
-public class Cpu_Metrics extends Metric
+public class CpuMetrics extends Metric
 {
   private float percentage;
   private float load_average;
@@ -12,7 +12,7 @@ public class Cpu_Metrics extends Metric
   private boolean status;
 
 
-  public Cpu_Metrics(String ip, float percentage, float load_average, int process_counts, int threads, float io_percent, boolean status)
+  public CpuMetrics(String ip, float percentage, float load_average, int process_counts, int threads, float io_percent, boolean status)
   {
     super(ip);
 

@@ -1,13 +1,12 @@
-package com.example.plugin.plugin_linux;
+package com.example.plugin.linux;
 
-import com.example.plugin.models.Cpu_Metrics;
-import com.example.plugin.models.Memory_Metrics;
+import com.example.plugin.models.CpuMetrics;
+import com.example.plugin.models.MemoryMetrics;
 import com.example.plugin.utils.Config;
 import com.jcraft.jsch.*;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -15,17 +14,18 @@ import java.util.*;
 public class FetchDetails extends AbstractVerticle
 {
 
-  final static String[] cpuMetricsCommand = {
-    "top -bn1 | grep '%Cpu' | awk '{print $2}'",   // CPU spent in system processes
-    "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'", // 1-minute load average
-    "ps aux | wc -l",                             // Count total no of  processes
-    "ps -eLF | wc -l",                            // Count total threads
-    "iostat | awk 'NR==4 {print $4}'"             // I/O wait
-  };
+  final static Map<String,List<String>> metricCommands = new HashMap<>();
 
-  final static String memoryCommand = "free";
+  static {
 
-  final static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
+    metricCommands.put("memory",Arrays.asList("free","df | awk 'NR==4 {print $2}'"));
+
+    metricCommands.put("cpu", Arrays.asList(
+      "echo $(top -bn1 | grep '%Cpu' | awk '{print $2}') $(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}') $(ps aux | wc -l) $(ps -eLF | wc -l) $(iostat | awk 'NR==4 {print $4}')"
+
+    ));
+
+  }
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception
@@ -80,20 +80,11 @@ public class FetchDetails extends AbstractVerticle
 
       session.connect();
 
-      var commands = new ArrayList<String>();
-
-      if (metric.equals("memory"))
-      {
-        commands.add(memoryCommand);
-
-        commands.add(diskSpaceCommand);
-      }
-      else if (metric.equals("cpu"))
-      {
-        commands.addAll(Arrays.asList(cpuMetricsCommand));
-      }
+      var commands = metricCommands.get(metric);
 
       var output = executeCommands(session, commands);
+
+      System.out.println("Output "+output);
 
       session.disconnect();
 
@@ -105,15 +96,11 @@ public class FetchDetails extends AbstractVerticle
     }
     catch (Exception exception)
     {
-      System.out.println("Exception: " + exception.getMessage());
+      return new JsonObject()
 
-      var errorObject = new JsonObject();
+      .put("status", false)
 
-      errorObject.put("status", false);
-
-      errorObject.put("ip", ip);
-
-      return errorObject;
+      .put("ip", ip);
 
     }
 
@@ -192,7 +179,7 @@ public class FetchDetails extends AbstractVerticle
 
     var swapData = lines[2].split("\\s+");
 
-    return new Memory_Metrics(
+    return new MemoryMetrics(
       ip,
 
       Integer.parseInt(memoryData[3]),
@@ -210,21 +197,49 @@ public class FetchDetails extends AbstractVerticle
 
   private JsonObject parseCpuMetrics(List<String> output, String ip)
   {
+    var data = output.get(0).split(" ");
 
-    return new Cpu_Metrics(
+    return new CpuMetrics(
+
       ip,
-      Float.parseFloat(output.get(0)),
 
-      Float.parseFloat(output.get(1)),
+      Float.parseFloat(data[0]),
 
-      Integer.parseInt(output.get(2)),
+      Float.parseFloat(data[1].substring(0,data[1].length()-1)),
 
-      Integer.parseInt(output.get(3)),
+      Integer.parseInt(data[2]),
 
-      Float.parseFloat(output.get(4)),
+      Integer.parseInt(data[3]),
+
+      Float.parseFloat(data[4]),
 
       true).toJson();
 
   }
 
 }
+
+//
+//  final static String[] cpuMetricsCommand = {
+//    "top -bn1 | grep '%Cpu' | awk '{print $2}'",   // CPU spent in system processes
+//    "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'", // 1-minute load average
+//    "ps aux | wc -l",                             // Count total no of  processes
+//    "ps -eLF | wc -l",                            // Count total threads
+//    "iostat | awk 'NR==4 {print $4}'"             // I/O wait
+//  };
+//
+//  final static String memoryCommand = "free";
+//
+//  final static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
+//
+//  final static String[] cpuMetricsCommand = {
+//    "top -bn1 | grep '%Cpu' | awk '{print $2}'",   // CPU spent in system processes
+//    "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}'", // 1-minute load average
+//    "ps aux | wc -l",                             // Count total no of  processes
+//    "ps -eLF | wc -l",                            // Count total threads
+//    "iostat | awk 'NR==4 {print $4}'"             // I/O wait
+//  };
+//
+//  final static String memoryCommand = "free";
+//
+//  final static String diskSpaceCommand = "df | awk 'NR==4 {print $2}'";
